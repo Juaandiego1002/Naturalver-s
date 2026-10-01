@@ -1,13 +1,13 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { queryProductBySlug, queryPageBySlug } from '@/lib/payload';
+import { queryProducts } from '@/lib/payload';
+import { getImageUrl } from '@/lib/payload';
 import { Layout } from '@/components/layout/Layout';
 import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { ProductGrid } from '@/components/catalog/ProductGrid';
 import { ProductCard } from '@/components/catalog/ProductCard';
-import { queryProducts } from '@/lib/payload';
-import { getImageUrl } from '@/lib/payload';
 import { Button } from '@/components/ui/Button';
 
 interface Props {
@@ -31,7 +31,7 @@ export default async function DynamicPage({ params }: Props) {
   const { slug } = await params;
 
   // Primero busca como producto
-  const product = await queryProductBySlug(slug);
+  const product = await queryProductBySlug(slug, 2);
 
   if (product) {
     const images = product.images || [];
@@ -39,6 +39,7 @@ export default async function DynamicPage({ params }: Props) {
     const related = await queryProducts({
       where: product.category ? { category: { equals: product.category.id } } : undefined,
       limit: 4,
+      depth: 2,
     });
     const relatedProducts = related.docs.filter((p: any) => p.id !== product.id);
 

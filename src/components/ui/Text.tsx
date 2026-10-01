@@ -10,6 +10,7 @@ export function Text({ as: Tag = 'p', variant = 'body', className, children }: {
   };
   const tagStyles = {
     p: '',
+    span: '',
     h1: 'text-4xl font-heading font-bold',
     h2: 'text-3xl font-heading font-bold',
     h3: 'text-2xl font-heading font-semibold',

@@ -9,34 +9,34 @@ npm run dev         # next dev (:3000)
 npm run build
 npm run typecheck   # tsc --noEmit
 npm run lint        # BROKEN — see below
+npm run db:up       # docker compose up -d mongodb
+npm run db:down     # docker compose down
+npm run seed        # tsx scripts/seed.ts
 ```
 
 - **`npm run lint` does not work.** `eslint` is not in `devDependencies` and there is no eslint config. Don't try to fix lint errors you can't reproduce; use `typecheck`.
 - **There is no test framework.** No `test` script, no runner, no fixtures. Verification = `npm run typecheck` + `npm run dev`.
 - Import alias is `@/*` → `src/*` (`tsconfig.json`).
 
-## `npm run typecheck` fails on a clean checkout — 9 pre-existing errors
+## `npm run typecheck` fails on a clean checkout — 7 pre-existing errors (down from 9)
 
 Do not attribute these to your change; fix only the ones you touch:
 
 | Location | Error |
 |---|---|
-| `payload.config.ts:28` | `outfile` is not a valid key — installed Payload 3 expects `outputFile` |
-| `src/collections/*.ts` (6 files) | `Cannot find module '@payloadcms/payload'` — that package doesn't exist; the types live in `payload` |
 | `src/app/layout.tsx:15` | `crossorigin` must be `crossOrigin` (React DOM casing) |
 | `src/components/ui/Text.tsx:21` | variant map is missing the `span` key |
 
-## Payload CMS is configured but NOT wired into Next.js
+## Payload CMS is now wired into Next.js
 
-This is the single biggest trap. Assume nothing about the CMS working:
-
-- `payload.config.ts` is **dead config**. There is no `(payload)` route group, no `route.ts` anywhere, and no `import ... from 'payload'` in `src/`. **`/admin` does not exist.**
-- `src/lib/payload.ts` fetches `/api/products` etc. — no such endpoint exists, so every call throws and silently falls back to `src/lib/mock-data.ts`. Its `useMock` flag latches `true` for the process lifetime after the first failure.
-- Pages that bypass the data layer entirely import mock data directly — e.g. `src/app/catalogo/page.tsx:14` imports `@/lib/mock-data`. Check the import before assuming a page reads through `src/lib/payload.ts`.
-- **Mock data is the live catalog.** To change what the storefront shows today, edit `src/lib/mock-data.ts`.
-- `src/types/payload.ts` (the configured codegen outfile) **does not exist and is not committed**. `src/types/index.ts` is hand-written despite its "Tipos generados por Payload CMS" header — treat it as normal source you must maintain by hand. There is no codegen command; `next dev` does not generate it in this setup.
-- `Orders` has `access: { read, create, update, delete: () => true }` — fully open. It's inert today; it becomes a live hole the moment the admin is mounted. Don't copy that pattern.
-- Collection fields use `localized: true` but `payload.config.ts` declares no `i18n` block, so localization is unverified at best.
+- `payload.config.ts` is mounted at `src/app/(payload)/route.ts` via `@payloadcms/next/routes` REST handlers. `/admin` and `/api` are now live.
+- `src/lib/payload.ts` is the live data layer — no more `useMock` fallback. All queries use `depth=2` so upload relations populate.
+- `src/app/catalogo/page.tsx` and `src/app/[slug]/page.tsx` are Server Components that fetch from Payload via `queryProducts` / `queryProductBySlug`.
+- `scripts/seed.ts` populates the DB from `mock-data.ts` fixtures. Run `npm run db:up` then `npm run seed` to bootstrap.
+- `Orders` access is restricted to admin users (`role === 'admin'`). It is no longer a live hole.
+- Collections use `import { CollectionConfig } from 'payload'` (fixed from `@payloadcms/payload`).
+- `payload.config.ts` uses `outputFile` (not `outfile`).
+- `localized: true` removed from all fields — site is Spanish-only, no i18n block needed.
 
 ## Payments / orders are not implemented
 
@@ -53,7 +53,7 @@ This is the single biggest trap. Assume nothing about the CMS working:
 
 ## Env
 
-`payload.config.ts` has dev fallbacks (`PAYLOAD_SECRET=dev-secret-change-me`, `mongodb://localhost:27017/naturalvers`), so `npm run dev` and `npm run build` work with no env file. `.env.local` is gitignored and **not present** — create it from `.env.example` when you need real values. `NEXT_PUBLIC_PAYLOAD_API_URL` (read by `src/lib/payload.ts`) is undocumented in `.env.example`; it defaults to `/api`.
+`payload.config.ts` has dev fallbacks (`PAYLOAD_SECRET=dev-secret-change-me`, `mongodb://localhost:27017/naturalvers`), so `npm run dev` and `npm run build` work with no env file. `.env.local` is gitignored and **not present** — create it from `.env.example` when you need real values. `NEXT_PUBLIC_PAYLOAD_API_URL` (read by `src/lib/payload.ts`) is documented in `.env.example` and defaults to `/api`.
 
 ## Design tokens are defined twice — keep them in sync
 
@@ -67,8 +67,8 @@ Fonts: `font-heading` (Lora), `font-body` (Raleway), `font-script` (Great Vibes)
 
 - `next.config.js` allows `next/image` remote sources only for `placehold.co` and `res.cloudinary.com`. Any other image host needs a new `remotePatterns` entry or it fails at runtime.
 - Component naming is inconsistent by design: `components/ui/*` and `layout/*` are PascalCase; `components/cart/*` and `catalog/*` are kebab-case except `ProductCard.tsx` / `ProductGrid.tsx`. Match the directory you're editing.
-- Most components are Server Components; add `'use client'` only for state/handlers (`Header.tsx`, `catalogo/page.tsx` are client).
+- Most components are Server Components; add `'use client'` only for state/handlers (`Header.tsx`, `SearchBar.tsx` are client).
 
 ## Spec-driven workflow
 
-`openspec/` is set up (`schema: spec-driven`, `openspec/config.yaml`) with skills in `.opencode/skills/openspec-*`. `openspec/changes/` is empty (only `archive/.gitkeep`). There is no `opencode.json` in the repo. Current branch is `juandi`; history is a single commit.
+`openspec/` is set up (`schema: spec-driven`, `openspec/config.yaml`) with skills in `.opencode/skills/openspec-*`. `openspec/changes/` contains changes like `fix-typography-and-navbar-logo` and `wire-payload-cms`. Current branch is `juandi`.

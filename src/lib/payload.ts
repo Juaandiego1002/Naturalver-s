@@ -1,11 +1,25 @@
-// Payload client with automatic fallback to mock data
-import { mockProducts, mockCategories } from './mock-data';
+import { getMockProducts, getMockProductBySlug, getMockCategories } from './mock-data';
+import { headers } from 'next/headers';
 
-const PAYLOAD_API_URL = process.env.NEXT_PUBLIC_PAYLOAD_API_URL || '/api';
-let useMock = false;
+async function getPayloadApiUrl(): Promise<string> {
+  const envUrl = process.env.NEXT_PUBLIC_PAYLOAD_API_URL || '/api';
+  if (envUrl.startsWith('http')) return envUrl;
+
+  // In Server Components, construct full URL from headers
+  try {
+    const headersList = await headers();
+    const host = headersList.get('host') || 'localhost:3000';
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    return `${protocol}://${host}${envUrl}`;
+  } catch {
+    // Fallback for build time or non-request contexts
+    return `http://localhost:3000${envUrl}`;
+  }
+}
 
 async function payloadFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${PAYLOAD_API_URL}${endpoint}`, {
+  const baseUrl = await getPayloadApiUrl();
+  const res = await fetch(`${baseUrl}${endpoint}`, {
     headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
   });
@@ -22,75 +36,50 @@ export async function queryProducts(params: {
   sort?: string;
   limit?: number;
   page?: number;
+  depth?: number;
 }) {
-  const { where, sort, limit = 12, page = 1 } = params;
+  const { where, sort, limit = 12, page = 1, depth = 2 } = params;
 
-  if (useMock) {
-    const category = (where?.category as any)?.equals || '';
-    const nameQuery = (where?.name as any)?.like || '';
-    return getMockProducts(limit, page, category, sort || 'popular', nameQuery);
+  const searchParams = new URLSearchParams();
+  if (sort) searchParams.set('sort', sort);
+  searchParams.set('limit', String(limit));
+  searchParams.set('page', String(page));
+  searchParams.set('depth', String(depth));
+
+  if (where) {
+    Object.entries(where).forEach(([key, value]) => {
+      if (typeof value === 'object' && value !== null) {
+        Object.entries(value as Record<string, unknown>).forEach(([op, val]) => {
+          searchParams.set(`where[${key}][${op}]`, String(val));
+        });
+      } else {
+        searchParams.set(`where[${key}]`, String(value));
+      }
+    });
   }
 
-  try {
-    const searchParams = new URLSearchParams();
-    if (sort) searchParams.set('sort', sort);
-    searchParams.set('limit', String(limit));
-    searchParams.set('page', String(page));
-
-    if (where) {
-      Object.entries(where).forEach(([key, value]) => {
-        if (typeof value === 'object' && value !== null) {
-          Object.entries(value as Record<string, unknown>).forEach(([op, val]) => {
-            searchParams.set(`where[${key}][${op}]`, String(val));
-          });
-        } else {
-          searchParams.set(`where[${key}]`, String(value));
-        }
-      });
-    }
-
-    const res = await payloadFetch<{ docs: any[]; totalDocs: number; totalPages: number; page: number }>(
-      `/products?${searchParams.toString()}`
-    );
-    return res;
-  } catch {
-    useMock = true;
-    const category = (where?.category as any)?.equals || '';
-    const nameQuery = (where?.name as any)?.like || '';
-    return getMockProducts(limit, page, category, sort || 'popular', nameQuery);
-  }
+  return payloadFetch<{ docs: any[]; totalDocs: number; totalPages: number; page: number }>(
+    `/products?${searchParams.toString()}`
+  );
 }
 
-export async function queryProductBySlug(slug: string) {
-  if (useMock) return getMockProductBySlug(slug);
-  try {
-    const res = await payloadFetch<{ docs: any[] }>(
-      `/products?where[slug][equals]=${encodeURIComponent(slug)}&limit=1`
-    );
-    return res.docs[0] || null;
-  } catch {
-    useMock = true;
-    return getMockProductBySlug(slug);
-  }
+export async function queryProductBySlug(slug: string, depth = 2) {
+  return payloadFetch<{ docs: any[] }>(
+    `/products?where[slug][equals]=${encodeURIComponent(slug)}&limit=1&depth=${depth}`
+  ).then((res) => res.docs[0] || null);
 }
 
-export async function queryCategories() {
-  if (useMock) return getMockCategories();
-  try {
-    const res = await payloadFetch<{ docs: any[] }>('/categories?sort=order&limit=100');
-    return res.docs;
-  } catch {
-    useMock = true;
-    return getMockCategories();
-  }
+export async function queryCategories(depth = 0) {
+  return payloadFetch<{ docs: any[] }>(
+    `/categories?sort=order&limit=100&depth=${depth}`
+  ).then((res) => res.docs);
 }
 
 export async function queryPageBySlug(slug: string) {
   try {
-    const res = await payloadFetch<{ docs: any[] }>(
+    return payloadFetch<{ docs: any[] }>(
       `/pages?where[slug][equals]=${encodeURIComponent(slug)}&limit=1`
-    );
-    return res.docs[0] || null;
+    ).then((res) => res.docs[0] || null);
   } catch {
     return null;
   }
@@ -101,6 +90,3 @@ export function getImageUrl(image: any): string {
   if (typeof image === 'string') return image;
   return image?.url || '/placeholder-product.jpg';
 }
-
-// Re-export mock helpers
-import { getMockProducts, getMockProductBySlug, getMockCategories } from './mock-data';

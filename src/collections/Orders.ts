@@ -1,4 +1,4 @@
-import { CollectionConfig } from '@payloadcms/payload';
+import { CollectionConfig } from 'payload';
 
 export const Orders: CollectionConfig = {
   slug: 'orders',
@@ -7,10 +7,10 @@ export const Orders: CollectionConfig = {
     description: 'Pedidos de NATURALVER\'S',
   },
   access: {
-    read: () => true,
-    create: () => true,
-    update: () => true,
-    delete: () => true,
+    read: ({ req }) => req.user?.role === 'admin',
+    create: ({ req }) => req.user?.role === 'admin',
+    update: ({ req }) => req.user?.role === 'admin',
+    delete: ({ req }) => req.user?.role === 'admin',
   },
   fields: [
     {

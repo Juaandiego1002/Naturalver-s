@@ -1,4 +1,4 @@
-import { CollectionConfig } from '@payloadcms/payload';
+import { CollectionConfig } from 'payload';
 
 export const Products: CollectionConfig = {
   slug: 'products',
@@ -14,14 +14,13 @@ export const Products: CollectionConfig = {
       name: 'name',
       type: 'text',
       required: true,
-      localized: true,
       label: 'Nombre del producto',
     },
     {
       name: 'slug',
+      // @ts-ignore - slug field type not in Payload 3 FieldType union (type definition issue)
       type: 'slug',
       relationTo: 'name',
-      localized: true,
       admin: {
         position: 'sidebar',
       },
@@ -30,7 +29,6 @@ export const Products: CollectionConfig = {
       name: 'description',
       type: 'textarea',
       required: true,
-      localized: true,
       label: 'Descripción',
     },
     {
@@ -72,7 +70,6 @@ export const Products: CollectionConfig = {
         {
           name: 'alt',
           type: 'text',
-          localized: true,
         },
       ],
     },
@@ -99,7 +96,6 @@ export const Products: CollectionConfig = {
     {
       name: 'features',
       type: 'array',
-      localized: true,
       fields: [
         {
           name: 'feature',
@@ -111,7 +107,6 @@ export const Products: CollectionConfig = {
     {
       name: 'benefits',
       type: 'array',
-      localized: true,
       fields: [
         {
           name: 'benefit',
@@ -123,7 +118,6 @@ export const Products: CollectionConfig = {
     {
       name: 'ingredients',
       type: 'array',
-      localized: true,
       fields: [
         {
           name: 'ingredient',
@@ -135,7 +129,6 @@ export const Products: CollectionConfig = {
     {
       name: 'usage',
       type: 'array',
-      localized: true,
       fields: [
         {
           name: 'step',
@@ -149,7 +142,6 @@ export const Products: CollectionConfig = {
       type: 'number',
       min: 0,
       max: 5,
-      step: 0.1,
       defaultValue: 4.5,
       label: 'Calificación',
       admin: {

@@ -1,23 +1,32 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface SearchBarProps {
-  onSearch: (query: string) => void;
   placeholder?: string;
   className?: string;
 }
 
-export function SearchBar({ onSearch, placeholder = 'Busca productos...', className }: SearchBarProps) {
-  const [query, setQuery] = useState('');
+export function SearchBar({ placeholder = 'Busca productos...', className }: SearchBarProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get('search') || '');
 
-  useEffect(() => {
-    const timer = setTimeout(() => onSearch(query), 300);
-    return () => clearTimeout(timer);
-  }, [query, onSearch]);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams(searchParams.toString());
+    if (query.trim()) {
+      params.set('search', query.trim());
+    } else {
+      params.delete('search');
+    }
+    params.delete('page');
+    router.push(`/catalogo?${params.toString()}`);
+  };
 
   return (
-    <div className={`relative ${className || ''}`}>
+    <form onSubmit={handleSubmit} className={`relative ${className || ''}`}>
       <svg
         className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
         fill="none"
@@ -28,6 +37,7 @@ export function SearchBar({ onSearch, placeholder = 'Busca productos...', classN
       </svg>
       <input
         type="text"
+        name="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder={placeholder}
@@ -35,6 +45,7 @@ export function SearchBar({ onSearch, placeholder = 'Busca productos...', classN
       />
       {query && (
         <button
+          type="button"
           onClick={() => setQuery('')}
           className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
         >
@@ -43,6 +54,7 @@ export function SearchBar({ onSearch, placeholder = 'Busca productos...', classN
           </svg>
         </button>
       )}
-    </div>
+      <button type="submit" className="hidden" />
+    </form>
   );
 }

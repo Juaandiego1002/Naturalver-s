@@ -1,6 +1,3 @@
-'use client';
-
-import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Layout } from '@/components/layout/Layout';
 import { Container } from '@/components/ui/Container';
@@ -11,41 +8,50 @@ import { ProductSort } from '@/components/catalog/product-sort';
 import { Pagination } from '@/components/ui/Pagination';
 import { Section } from '@/components/ui/Section';
 import { SearchBar } from '@/components/ui/SearchBar';
-import { mockProducts, mockCategories, getMockProducts } from '@/lib/mock-data';
+import { queryProducts, queryCategories } from '@/lib/payload';
 
 const PRODUCTS_PER_PAGE = 12;
 
-export default function CatalogoPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [sortBy, setSortBy] = useState('popular');
-  const [currentPage, setCurrentPage] = useState(1);
+const sortMapping: Record<string, string> = {
+  popular: '-createdAt',
+  newest: '-createdAt',
+  name_asc: 'name',
+  name_desc: '-name',
+  price_asc: 'price',
+  price_desc: '-price',
+};
 
-  // Reset page when filters change
-  const handleCategoryChange = (cat: string) => {
-    setSelectedCategory(cat);
-    setCurrentPage(1);
-  };
+interface SearchParams {
+  search?: string;
+  category?: string;
+  sort?: string;
+  page?: string;
+}
 
-  const handleSortChange = (sort: string) => {
-    setSortBy(sort);
-    setCurrentPage(1);
-  };
+export default async function CatalogoPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const params = await searchParams;
+  const searchQuery = params.search || '';
+  const selectedCategory = params.category || '';
+  const sortBy = params.sort || 'popular';
+  const currentPage = parseInt(params.page || '1', 10);
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    setCurrentPage(1);
-  };
-
-  const result = useMemo(() => {
-    return getMockProducts(
-      PRODUCTS_PER_PAGE,
-      currentPage,
-      selectedCategory,
-      sortBy,
-      searchQuery
-    );
-  }, [currentPage, selectedCategory, sortBy, searchQuery]);
+  const [productsResult, categories] = await Promise.all([
+    queryProducts({
+      where: {
+        ...(selectedCategory && { category: { equals: selectedCategory } }),
+        ...(searchQuery && { name: { like: searchQuery } }),
+      },
+      sort: sortMapping[sortBy] || '-createdAt',
+      limit: PRODUCTS_PER_PAGE,
+      page: currentPage,
+      depth: 2,
+    }),
+    queryCategories(0),
+  ]);
 
   return (
     <Layout>
@@ -62,34 +68,32 @@ export default function CatalogoPage() {
 
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="max-w-md flex-1">
-              <SearchBar onSearch={handleSearch} placeholder="Busca productos..." />
+              <SearchBar placeholder="Busca productos..." />
             </div>
-            <ProductSort value={sortBy} onChange={handleSortChange} />
+            <ProductSort value={sortBy} />
           </div>
 
           <div className="mb-6">
             <CategoryFilter
-              categories={mockCategories.map((c) => ({ id: c.id, name: c.name }))}
+              categories={categories.map((c) => ({ id: c.id, name: c.name }))}
               active={selectedCategory}
-              onChange={handleCategoryChange}
             />
           </div>
 
-          {result.docs.length > 0 ? (
+          {productsResult.docs.length > 0 ? (
             <>
               <ProductGrid>
-                {result.docs.map((product: any) => (
+                {productsResult.docs.map((product: any) => (
                   <Link key={product.id} href={`/${product.slug}`} style={{ display: 'contents' }}>
                     <ProductCard product={product} />
                   </Link>
                 ))}
               </ProductGrid>
-              {result.totalPages > 1 && (
+              {productsResult.totalPages > 1 && (
                 <div className="mt-12">
                   <Pagination
-                    total={result.totalDocs}
-                    page={currentPage}
-                    onPageChange={setCurrentPage}
+                    total={productsResult.totalDocs}
+                    page={productsResult.page}
                   />
                 </div>
               )}
@@ -98,7 +102,7 @@ export default function CatalogoPage() {
             <div className="py-12 text-center">
               <p className="text-gray-500">No se encontraron productos para &ldquo;{searchQuery}&rdquo;</p>
               <button
-                onClick={() => { setSearchQuery(''); setSelectedCategory(''); }}
+                onClick={() => (window.location.search = '')}
                 className="mt-4 text-sm font-medium text-brand-dark hover:underline"
               >
                 Limpiar filtros

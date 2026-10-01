@@ -1,4 +1,4 @@
-import { CollectionConfig } from '@payloadcms/payload';
+import { CollectionConfig } from 'payload';
 
 export const Users: CollectionConfig = {
   slug: 'users',

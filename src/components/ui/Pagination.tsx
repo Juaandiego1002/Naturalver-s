@@ -1,6 +1,11 @@
-import { cn } from '@/lib/utils';
+'use client';
 
-export function Pagination({ total, page, pageSize = 12, onPageChange }: { total: number; page: number; pageSize?: number; onPageChange: (page: number) => void }) {
+import { cn } from '@/lib/utils';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+
+export function Pagination({ total, page, pageSize = 12 }: { total: number; page: number; pageSize?: number }) {
+  const searchParams = useSearchParams();
   const totalPages = Math.ceil(total / pageSize);
   if (totalPages <= 1) return null;
   const pages = [];
@@ -11,26 +16,36 @@ export function Pagination({ total, page, pageSize = 12, onPageChange }: { total
       pages.push(-1);
     }
   }
+
+  const buildUrl = (p: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('page', String(p));
+    return `?${params.toString()}`;
+  };
+
   return (
     <div className="flex items-center justify-center gap-1">
-      <button
-        disabled={page === 1}
-        onClick={() => onPageChange(page - 1)}
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-500 disabled:opacity-50"
+      <Link
+        href={buildUrl(page - 1)}
+        className={cn(
+          'flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-500',
+          page === 1 && 'opacity-50 pointer-events-none'
+        )}
+        aria-label="Página anterior"
       >
         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
-      </button>
+      </Link>
       {pages.map((p, i) =>
         p === -1 ? (
           <span key={i} className="px-2 text-gray-400">
             ...
           </span>
         ) : (
-          <button
+          <Link
             key={p}
-            onClick={() => onPageChange(p)}
+            href={buildUrl(p)}
             className={cn(
               'flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-medium',
               p === page
@@ -39,18 +54,21 @@ export function Pagination({ total, page, pageSize = 12, onPageChange }: { total
             )}
           >
             {p}
-          </button>
+          </Link>
         )
       )}
-      <button
-        disabled={page === totalPages}
-        onClick={() => onPageChange(page + 1)}
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-500 disabled:opacity-50"
+      <Link
+        href={buildUrl(page + 1)}
+        className={cn(
+          'flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-500',
+          page === totalPages && 'opacity-50 pointer-events-none'
+        )}
+        aria-label="Página siguiente"
       >
         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
-      </button>
+      </Link>
     </div>
   );
 }

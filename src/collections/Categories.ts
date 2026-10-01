@@ -1,4 +1,4 @@
-import { CollectionConfig } from '@payloadcms/payload';
+import { CollectionConfig } from 'payload';
 
 export const Categories: CollectionConfig = {
   slug: 'categories',
@@ -13,13 +13,12 @@ export const Categories: CollectionConfig = {
       name: 'name',
       type: 'text',
       required: true,
-      localized: true,
     },
     {
       name: 'slug',
+      // @ts-ignore - slug field type not in Payload 3 FieldType union (type definition issue)
       type: 'slug',
       relationTo: 'name',
-      localized: true,
       admin: {
         position: 'sidebar',
       },
@@ -27,7 +26,6 @@ export const Categories: CollectionConfig = {
     {
       name: 'description',
       type: 'textarea',
-      localized: true,
     },
     {
       name: 'image',

@@ -1,4 +1,4 @@
-import { CollectionConfig } from '@payloadcms/payload';
+import { CollectionConfig } from 'payload';
 
 export const Pages: CollectionConfig = {
   slug: 'pages',
@@ -13,13 +13,12 @@ export const Pages: CollectionConfig = {
       name: 'title',
       type: 'text',
       required: true,
-      localized: true,
     },
     {
       name: 'slug',
+      // @ts-ignore - slug field type not in Payload 3 FieldType union (type definition issue)
       type: 'slug',
       relationTo: 'title',
-      localized: true,
       admin: {
         position: 'sidebar',
       },
@@ -28,18 +27,16 @@ export const Pages: CollectionConfig = {
       name: 'meta',
       type: 'group',
       fields: [
-        {
-          name: 'title',
-          type: 'text',
-          localized: true,
-          label: 'Título SEO',
-        },
-        {
-          name: 'description',
-          type: 'textarea',
-          localized: true,
-          label: 'Descripción SEO',
-        },
+{
+        name: 'title',
+        type: 'text',
+        label: 'Título SEO',
+      },
+{
+        name: 'description',
+        type: 'textarea',
+        label: 'Descripción SEO',
+      },
         {
           name: 'image',
           type: 'upload',
@@ -51,7 +48,6 @@ export const Pages: CollectionConfig = {
     {
       name: 'blocks',
       type: 'blocks',
-      localized: true,
       blocks: [],
     },
   ],

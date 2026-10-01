@@ -25,8 +25,7 @@ const config = buildConfig({
   },
   editor: lexicalEditor(),
   typescript: {
-    outfile: 'src/types/payload.ts',
-    depth: 2,
+    outputFile: 'src/types/payload.ts',
   },
 });
 

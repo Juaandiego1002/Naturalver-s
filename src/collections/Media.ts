@@ -1,4 +1,4 @@
-import { CollectionConfig } from '@payloadcms/payload';
+import { CollectionConfig } from 'payload';
 
 export const Media: CollectionConfig = {
   slug: 'media',
@@ -16,13 +16,11 @@ export const Media: CollectionConfig = {
     {
       name: 'alt',
       type: 'text',
-      localized: true,
       label: 'Texto alternativo',
     },
     {
       name: 'caption',
       type: 'text',
-      localized: true,
     },
   ],
   upload: {
