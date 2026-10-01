@@ -54,5 +54,6 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
           </div>
         )}
       </div>
-    );
-  }
+    </div>
+  );
+}

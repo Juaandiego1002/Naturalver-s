@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Logo } from './Logo';
 
 export function Footer() {
   return (
@@ -6,15 +7,8 @@ export function Footer() {
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-dark to-brand-light">
-                <svg className="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.5c-3.58 0-6.5-2.92-6.5-6.5S7.42 6.5 11 6.5v1.5c-2.76 0-5 2.24-5 5s2.24 5 5 5v1.5zm3-4.5l4.5-4.5L21 11l-5 5-3-3z" />
-                </svg>
-              </div>
-              <span className="text-xl font-heading font-bold text-brand-dark">
-                NATURALVER'S
-              </span>
+            <div className="mb-4">
+              <Logo size="sm" />
             </div>
             <p className="text-sm text-gray-500">
               Por un mundo mejor. Productos naturales para tu bienestar.
